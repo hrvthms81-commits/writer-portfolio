@@ -24,10 +24,25 @@ async function startServer() {
       const { data, error } = await supabase
         .from("works")
         .select("*")
-        .order("dateCreated", { ascending: false });
+        .order("date_created", { ascending: false });
       
       if (error) throw error;
-      res.json(data || []);
+      
+      // Map back to camelCase for frontend
+      const works = (data || []).map(w => ({
+        id: w.id,
+        title: w.title,
+        category: w.category,
+        description: w.description,
+        coverImage: w.cover_image,
+        pdfContent: w.pdf_content,
+        dateCreated: w.date_created,
+        isLocked: w.is_locked,
+        views: w.views,
+        downloads: w.downloads
+      }));
+      
+      res.json(works);
     } catch (error) {
       console.error("Error fetching works:", error);
       res.status(500).json({ error: "Failed to fetch works" });
@@ -36,12 +51,26 @@ async function startServer() {
 
   app.post("/api/works", async (req, res) => {
     try {
-      const newWork = req.body;
-      console.log(`Attempting to save work: ${newWork.title}`);
+      const work = req.body;
+      console.log(`Attempting to save work: ${work.title}`);
+      
+      // Map frontend camelCase to database snake_case
+      const dbWork = {
+        id: work.id,
+        title: work.title,
+        category: work.category,
+        description: work.description,
+        cover_image: work.coverImage,
+        pdf_content: work.pdfContent,
+        date_created: work.dateCreated,
+        is_locked: work.isLocked,
+        views: work.views || 0,
+        downloads: work.downloads || 0
+      };
       
       const { data, error } = await supabase
         .from("works")
-        .upsert(newWork)
+        .upsert(dbWork)
         .select();
       
       if (error) {
