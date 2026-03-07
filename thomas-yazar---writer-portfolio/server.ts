@@ -37,23 +37,40 @@ async function startServer() {
   app.post("/api/works", async (req, res) => {
     try {
       const newWork = req.body;
+      console.log(`Attempting to save work: ${newWork.title}`);
+      
       const { data, error } = await supabase
         .from("works")
         .upsert(newWork)
         .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error:", error);
+        return res.status(400).json({ 
+          error: "Supabase rejected the save", 
+          message: error.message,
+          hint: error.hint,
+          details: error.details
+        });
+      }
+      
+      console.log("Work saved successfully");
       
       // Fetch all works to return updated list
-      const { data: allWorks } = await supabase
+      const { data: allWorks, error: fetchError } = await supabase
         .from("works")
         .select("*")
         .order("dateCreated", { ascending: false });
         
+      if (fetchError) throw fetchError;
+        
       res.json(allWorks || []);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving work:", error);
-      res.status(500).json({ error: "Failed to save work" });
+      res.status(500).json({ 
+        error: "Failed to save work", 
+        message: error?.message || "Internal server error"
+      });
     }
   });
 
