@@ -89,11 +89,25 @@ async function startServer() {
       const { data: allWorks, error: fetchError } = await supabase
         .from("works")
         .select("*")
-        .order("dateCreated", { ascending: false });
+        .order("date_created", { ascending: false });
         
       if (fetchError) throw fetchError;
+      
+      // Map back to camelCase for frontend
+      const mappedWorks = (allWorks || []).map(w => ({
+        id: w.id,
+        title: w.title,
+        category: w.category,
+        description: w.description,
+        coverImage: w.cover_image,
+        pdfContent: w.pdf_content,
+        dateCreated: w.date_created,
+        isLocked: w.is_locked,
+        views: w.views,
+        downloads: w.downloads
+      }));
         
-      res.json(allWorks || []);
+      res.json(mappedWorks);
     } catch (error: any) {
       console.error("Error saving work:", error);
       res.status(500).json({ 
@@ -137,9 +151,23 @@ async function startServer() {
       const { data: allWorks } = await supabase
         .from("works")
         .select("*")
-        .order("dateCreated", { ascending: false });
+        .order("date_created", { ascending: false });
         
-      res.json(allWorks || []);
+      // Map back to camelCase for frontend
+      const mappedWorks = (allWorks || []).map(w => ({
+        id: w.id,
+        title: w.title,
+        category: w.category,
+        description: w.description,
+        coverImage: w.cover_image,
+        pdfContent: w.pdf_content,
+        dateCreated: w.date_created,
+        isLocked: w.is_locked,
+        views: w.views,
+        downloads: w.downloads
+      }));
+        
+      res.json(mappedWorks);
     } catch (error) {
       console.error("Error updating views:", error);
       res.status(500).json({ error: "Failed to update views" });
@@ -164,9 +192,23 @@ async function startServer() {
       const { data: allWorks } = await supabase
         .from("works")
         .select("*")
-        .order("dateCreated", { ascending: false });
+        .order("date_created", { ascending: false });
         
-      res.json(allWorks || []);
+      // Map back to camelCase for frontend
+      const mappedWorks = (allWorks || []).map(w => ({
+        id: w.id,
+        title: w.title,
+        category: w.category,
+        description: w.description,
+        coverImage: w.cover_image,
+        pdfContent: w.pdf_content,
+        dateCreated: w.date_created,
+        isLocked: w.is_locked,
+        views: w.views,
+        downloads: w.downloads
+      }));
+        
+      res.json(mappedWorks);
     } catch (error) {
       console.error("Error updating downloads:", error);
       res.status(500).json({ error: "Failed to update downloads" });
