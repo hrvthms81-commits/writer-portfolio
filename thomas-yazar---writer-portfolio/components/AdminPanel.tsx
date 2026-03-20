@@ -236,7 +236,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
             className={`px-6 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'messages' ? 'border-accent text-accent' : 'border-transparent text-gray-400 hover:text-ink'}`}
           >
             Messages
-            {messages.some(m => !m.isRead) && (
+            {Array.isArray(messages) && messages.some(m => !m.isRead) && (
               <span className="w-2 h-2 bg-red-500 rounded-full"></span>
             )}
           </button>
@@ -436,31 +436,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
               </button>
             </div>
 
-            {isFetchingMessages && messages.length === 0 ? (
+            {isFetchingMessages && (!messages || messages.length === 0) ? (
               <div className="text-center py-12">
-                <i className="fa-solid fa-spinner fa-spin text-2xl text-gray-300"></i>
+                <i className="fa-solid fa-spinner fa-spin text-2xl text-accent"></i>
+                <p className="text-xs text-gray-400 mt-2">Fetching messages...</p>
               </div>
-            ) : messages.length === 0 ? (
+            ) : (!messages || !Array.isArray(messages) || messages.length === 0) ? (
               <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
                 <p className="text-gray-400 text-sm">No messages yet.</p>
+                <div className="mt-4 p-4 bg-white border border-gray-100 rounded text-left max-w-xs mx-auto">
+                  <p className="text-[10px] text-gray-500 font-bold uppercase mb-1">Troubleshooting:</p>
+                  <p className="text-[10px] text-gray-400 leading-relaxed">
+                    If you expect messages here, ensure your Supabase 'messages' table exists with these columns:
+                    <br/><span className="font-mono text-accent">id, name, email, message, date_created, is_read</span>
+                  </p>
+                </div>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4 pb-12">
                 {messages.map(msg => (
                   <div 
-                    key={msg.id} 
+                    key={msg.id || Math.random()} 
                     className={`p-5 rounded-lg border transition-all ${msg.isRead ? 'bg-white border-gray-100' : 'bg-orange-50/30 border-orange-100 ring-1 ring-orange-100'}`}
                   >
                     <div className="flex justify-between items-start mb-3">
                       <div>
                         <h4 className="font-bold text-ink flex items-center gap-2">
-                          {msg.name}
+                          {msg.name || 'Anonymous'}
                           {!msg.isRead && <span className="text-[10px] bg-accent text-white px-1.5 py-0.5 rounded uppercase">New</span>}
                         </h4>
                         <p className="text-xs text-gray-500">{msg.email || 'No email provided'}</p>
                       </div>
                       <span className="text-[10px] text-gray-400 uppercase">
-                        {new Date(msg.dateCreated).toLocaleDateString()}
+                        {msg.dateCreated ? new Date(msg.dateCreated).toLocaleDateString() : 'Unknown Date'}
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 bg-white/50 p-3 rounded border border-gray-50 mb-4 whitespace-pre-wrap">

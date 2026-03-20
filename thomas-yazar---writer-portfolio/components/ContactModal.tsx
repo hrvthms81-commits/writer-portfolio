@@ -34,6 +34,19 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
       return;
     }
 
+    // Length Check
+    if (message.length > 200) {
+      setError('Message is too long. Maximum 200 characters allowed.');
+      return;
+    }
+
+    // Link Detection
+    const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+    if (urlRegex.test(message)) {
+      setError('Links are not allowed in the message for security reasons.');
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await saveMessage({ name, email, message });
@@ -41,8 +54,8 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
       setTimeout(() => {
         onClose();
       }, 3000);
-    } catch (err) {
-      setError('Failed to send message. Please try again later.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to send message. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
@@ -95,13 +108,19 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Message</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-xs font-bold uppercase text-gray-500">Message</label>
+                  <span className={`text-[10px] font-bold ${message.length > 200 ? 'text-red-500' : 'text-gray-400'}`}>
+                    {message.length}/200
+                  </span>
+                </div>
                 <textarea 
                   required
                   value={message}
                   onChange={e => setMessage(e.target.value)}
+                  maxLength={250}
                   rows={4}
-                  className="w-full border border-gray-300 rounded p-2 focus:border-accent focus:ring-1 focus:ring-accent outline-none resize-none"
+                  className={`w-full border rounded p-2 focus:ring-1 outline-none resize-none ${message.length > 200 ? 'border-red-300 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-accent focus:ring-accent'}`}
                   placeholder="Tell me what you think..."
                 />
               </div>

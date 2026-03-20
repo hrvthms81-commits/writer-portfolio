@@ -276,7 +276,12 @@ const App: React.FC = () => {
                     <span className="text-[10px] uppercase tracking-wider font-bold text-accent">{work.category}</span>
                     <span className="text-[10px] text-gray-400">{new Date(work.dateCreated).toLocaleDateString()}</span>
                   </div>
-                  <h3 className="text-lg font-serif font-bold text-ink group-hover:text-accent transition-colors">{work.title}</h3>
+                  <h3 className="text-lg font-serif font-bold text-ink group-hover:text-accent transition-colors">
+                    {work.title} 
+                    <span className="ml-2 text-xs font-sans font-normal text-gray-400">
+                      ({work.views || 0} views{work.category !== Category.THOUGHT ? `, ${work.downloads || 0} downloads` : ''})
+                    </span>
+                  </h3>
                   <div className="flex items-center gap-4 mt-1">
                     <p className="text-gray-500 text-xs line-clamp-1 max-w-2xl">{work.description}</p>
                     <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium uppercase tracking-wider ml-auto">

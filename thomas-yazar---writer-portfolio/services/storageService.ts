@@ -141,7 +141,12 @@ export const logoutUser = (): void => {
 export const getMessages = async (): Promise<any[]> => {
   try {
     const response = await fetch('/api/messages');
-    return await response.json();
+    const data = await response.json();
+    if (data.error) {
+      console.error('Server error fetching messages:', data.error);
+      return [];
+    }
+    return Array.isArray(data) ? data : [];
   } catch (error) {
     console.error('Error fetching messages:', error);
     return [];

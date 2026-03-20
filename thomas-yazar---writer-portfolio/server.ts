@@ -316,23 +316,44 @@ async function startServer() {
   app.post("/api/messages", async (req, res) => {
     try {
       const msg = req.body;
+      
+      // Server-side validation
+      if (!msg.message || msg.message.length > 200) {
+        return res.status(400).json({ error: "Message is too long (max 200 characters)." });
+      }
+
+      const urlRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)/gi;
+      if (urlRegex.test(msg.message)) {
+        return res.status(400).json({ error: "Links are not allowed in the message." });
+      }
+
+      // Use ISO string for better compatibility with SQL TIMESTAMP columns
+      const now = new Date().toISOString();
+      
       const { data, error } = await supabase
         .from("messages")
         .insert({
           name: msg.name,
           email: msg.email,
           message: msg.message,
-          date_created: Date.now(),
+          date_created: now,
           is_read: false
         })
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase error saving message:", error);
+        return res.status(400).json({ 
+          error: "Failed to save message", 
+          details: error.message,
+          hint: "Ensure the 'messages' table exists with columns: id, name, email, message, date_created (TIMESTAMP), is_read (BOOLEAN)"
+        });
+      }
       res.json(data);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving message:", error);
-      res.status(500).json({ error: "Failed to save message" });
+      res.status(500).json({ error: "Failed to save message", message: error?.message });
     }
   });
 
