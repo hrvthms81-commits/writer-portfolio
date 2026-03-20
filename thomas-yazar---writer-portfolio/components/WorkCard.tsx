@@ -5,14 +5,20 @@ interface WorkCardProps {
   work: Work;
   canAccess: boolean;
   onView: (work: Work) => void;
+  isLoading?: boolean;
 }
 
-const WorkCard: React.FC<WorkCardProps> = ({ work, canAccess, onView }) => {
+const WorkCard: React.FC<WorkCardProps> = ({ work, canAccess, onView, isLoading }) => {
   return (
     <div 
       className="group relative bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer"
-      onClick={() => onView(work)}
+      onClick={() => !isLoading && onView(work)}
     >
+      {isLoading && (
+        <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-20 flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      )}
       <div className="aspect-[4/5] sm:aspect-[3/4] w-full overflow-hidden relative">
         <img 
           src={work.coverImage} 

@@ -33,10 +33,11 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
     }
 
     // Simulate sending
+    console.log(`Message from ${name} (${email}) to hervethomas81@gmail.com: ${message}`);
     setSuccess(true);
     setTimeout(() => {
       onClose();
-    }, 2000);
+    }, 3000);
   };
 
   return (
@@ -57,7 +58,8 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
             <div className="text-center py-12">
               <i className="fa-solid fa-paper-plane text-4xl text-green-500 mb-4 animate-bounce"></i>
               <h3 className="text-xl font-bold text-gray-800">Message Sent!</h3>
-              <p className="text-gray-500">Thank you for writing. I'll get back to you soon.</p>
+              <p className="text-gray-500 text-sm mt-2">Thank you for writing. Your message has been sent to <span className="font-bold text-ink">hervethomas81@gmail.com</span>.</p>
+              <p className="text-xs text-gray-400 mt-4 italic">Closing window...</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -124,6 +126,16 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
               >
                 Send Message
               </button>
+
+              <div className="text-center pt-4">
+                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Or email directly</p>
+                <a 
+                  href="mailto:hervethomas81@gmail.com" 
+                  className="text-xs text-accent hover:underline font-bold"
+                >
+                  hervethomas81@gmail.com
+                </a>
+              </div>
             </form>
           )}
         </div>

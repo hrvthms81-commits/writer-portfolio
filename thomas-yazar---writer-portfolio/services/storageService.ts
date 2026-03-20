@@ -35,6 +35,17 @@ export const getWorks = async (): Promise<Work[]> => {
   }
 };
 
+export const getWorkById = async (id: string): Promise<Work | null> => {
+  try {
+    const response = await fetch(`/api/works/${id}`);
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (error) {
+    console.error(`Error fetching work ${id}:`, error);
+    return null;
+  }
+};
+
 export const saveWork = async (work: Work): Promise<void> => {
   try {
     const response = await fetch('/api/works', {

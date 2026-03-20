@@ -21,9 +21,10 @@ async function startServer() {
   // API Routes
   app.get("/api/works", async (req, res) => {
     try {
+      // Exclude heavy fields (pdf_content) from the initial list fetch
       const { data, error } = await supabase
         .from("works")
-        .select("*")
+        .select("id, title, category, description, cover_image, date_created, is_locked, views, downloads")
         .order("date_created", { ascending: false });
       
       if (error) throw error;
@@ -35,8 +36,6 @@ async function startServer() {
         category: w.category,
         description: w.description,
         coverImage: w.cover_image,
-        pdfContent: w.pdf_content,
-        content: w.content,
         dateCreated: w.date_created,
         isLocked: w.is_locked,
         views: w.views,
@@ -47,6 +46,37 @@ async function startServer() {
     } catch (error) {
       console.error("Error fetching works:", error);
       res.status(500).json({ error: "Failed to fetch works" });
+    }
+  });
+
+  app.get("/api/works/:id", async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from("works")
+        .select("*")
+        .eq("id", req.params.id)
+        .single();
+      
+      if (error) throw error;
+      
+      const work = {
+        id: data.id,
+        title: data.title,
+        category: data.category,
+        description: data.description,
+        coverImage: data.cover_image,
+        pdfContent: data.pdf_content,
+        content: data.content,
+        dateCreated: data.date_created,
+        isLocked: data.is_locked,
+        views: data.views,
+        downloads: data.downloads
+      };
+      
+      res.json(work);
+    } catch (error) {
+      console.error("Error fetching work details:", error);
+      res.status(500).json({ error: "Failed to fetch work details" });
     }
   });
 
@@ -153,7 +183,7 @@ async function startServer() {
       
       const { data: allWorks } = await supabase
         .from("works")
-        .select("*")
+        .select("id, title, category, description, cover_image, date_created, is_locked, views, downloads")
         .order("date_created", { ascending: false });
         
       // Map back to camelCase for frontend
@@ -163,8 +193,6 @@ async function startServer() {
         category: w.category,
         description: w.description,
         coverImage: w.cover_image,
-        pdfContent: w.pdf_content,
-        content: w.content,
         dateCreated: w.date_created,
         isLocked: w.is_locked,
         views: w.views,
@@ -195,7 +223,7 @@ async function startServer() {
       
       const { data: allWorks } = await supabase
         .from("works")
-        .select("*")
+        .select("id, title, category, description, cover_image, date_created, is_locked, views, downloads")
         .order("date_created", { ascending: false });
         
       // Map back to camelCase for frontend
@@ -205,8 +233,6 @@ async function startServer() {
         category: w.category,
         description: w.description,
         coverImage: w.cover_image,
-        pdfContent: w.pdf_content,
-        content: w.content,
         dateCreated: w.date_created,
         isLocked: w.is_locked,
         views: w.views,

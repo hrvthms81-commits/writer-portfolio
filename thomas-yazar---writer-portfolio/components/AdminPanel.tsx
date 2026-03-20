@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Category, Work } from '../types';
 import { generateWorkSummary } from '../services/geminiService';
-import { saveWork, deleteWork, getAccessCode, setAccessCode } from '../services/storageService';
+import { saveWork, deleteWork, getAccessCode, setAccessCode, getWorkById } from '../services/storageService';
 
 interface AdminPanelProps {
   works: Work[];
@@ -18,6 +18,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
   const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
   const [pdfContent, setPdfContent] = useState<string | undefined>(undefined);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [memberCode, setMemberCode] = useState('');
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -43,7 +44,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
-      handleFileRead(e.target.files[0], setCoverImage);
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 400;
+          const scaleSize = MAX_WIDTH / img.width;
+          canvas.width = MAX_WIDTH;
+          canvas.height = img.height * scaleSize;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            setCoverImage(dataUrl);
+          }
+        };
+        if (typeof event.target?.result === 'string') {
+          img.src = event.target.result;
+        }
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -61,17 +83,37 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
     setIsGenerating(false);
   };
 
-  const handleEdit = (work: Work) => {
+  const handleEdit = async (work: Work) => {
+    setIsFetchingDetail(true);
+    setEditingId(work.id);
+    
+    // Set initial values from the light work object
     setTitle(work.title);
     setCategory(work.category);
     setDescription(work.description);
-    setContent(work.content || '');
     setIsLocked(work.isLocked);
     setCoverImage(work.coverImage);
-    setPdfContent(work.pdfContent);
-    setEditingId(work.id);
     
-    // Clear file inputs visually as we can't set their value programmatically to the existing file
+    try {
+      // Fetch full details (including pdfContent and content)
+      const fullWork = await getWorkById(work.id);
+      if (fullWork) {
+        setContent(fullWork.content || '');
+        setPdfContent(fullWork.pdfContent);
+        // Update other fields just in case
+        setTitle(fullWork.title);
+        setCategory(fullWork.category);
+        setDescription(fullWork.description);
+        setIsLocked(fullWork.isLocked);
+        setCoverImage(fullWork.coverImage);
+      }
+    } catch (error) {
+      console.error("Error fetching work details for edit:", error);
+    } finally {
+      setIsFetchingDetail(false);
+    }
+    
+    // Clear file inputs visually
     if(fileInputRef.current) fileInputRef.current.value = '';
     if(pdfInputRef.current) pdfInputRef.current.value = '';
 
@@ -290,8 +332,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
 
           <button 
             type="submit" 
-            className={`w-full py-3 rounded-md transition-colors font-semibold ${editingId ? 'bg-accent hover:bg-orange-600 text-white' : 'bg-ink hover:bg-gray-800 text-white'}`}
+            disabled={isFetchingDetail}
+            className={`w-full py-3 rounded-md transition-colors font-semibold flex items-center justify-center gap-2 ${isFetchingDetail ? 'bg-gray-300 cursor-not-allowed' : (editingId ? 'bg-accent hover:bg-orange-600 text-white' : 'bg-ink hover:bg-gray-800 text-white')}`}
           >
+            {isFetchingDetail && <i className="fa-solid fa-spinner animate-spin"></i>}
             {editingId ? 'Update Work' : 'Publish Work'}
           </button>
         </form>

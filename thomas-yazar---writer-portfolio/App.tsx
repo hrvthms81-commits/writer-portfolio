@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Work, Category, User } from './types';
-import { getWorks, getCurrentUser, loginUser, logoutUser, incrementWorkView, incrementWorkDownload, getAccessCode, adminLogin } from './services/storageService';
+import { getWorks, getCurrentUser, loginUser, logoutUser, incrementWorkView, incrementWorkDownload, getAccessCode, adminLogin, getWorkById } from './services/storageService';
 import WorkCard from './components/WorkCard';
 import AdminPanel from './components/AdminPanel';
 import ChatBot from './components/ChatBot';
@@ -14,6 +14,8 @@ const App: React.FC = () => {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [selectedWork, setSelectedWork] = useState<Work | null>(null);
+  const [loadingWorkId, setLoadingWorkId] = useState<string | null>(null);
+  const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   
   // Login State Management
@@ -86,34 +88,57 @@ const App: React.FC = () => {
   };
 
   const handleViewWork = async (work: Work) => {
-    // Increment view count when opening details
-    const updatedWorks = await incrementWorkView(work.id);
-    setWorks(updatedWorks);
+    // Set loading state for the specific card
+    setLoadingWorkId(work.id);
     
-    // Find the updated work to display
-    const updatedWork = updatedWorks.find(w => w.id === work.id);
-    setSelectedWork(updatedWork || work);
+    // Set initial work data (metadata) to show modal immediately
+    setSelectedWork(work);
+    setIsLoadingDetail(true);
+
+    try {
+      // Increment view count
+      const updatedWorks = await incrementWorkView(work.id);
+      setWorks(updatedWorks);
+      
+      // Fetch full work details (including heavy fields like pdfContent)
+      const fullWork = await getWorkById(work.id);
+      if (fullWork) {
+        setSelectedWork(fullWork);
+      }
+    } catch (error) {
+      console.error("Error loading work details:", error);
+    } finally {
+      setIsLoadingDetail(false);
+      setLoadingWorkId(null);
+    }
   };
 
   const handleDownload = async (work: Work) => {
+    let workToDownload = work;
+    
+    // If pdfContent is missing, fetch it first
     if (!work.pdfContent) {
+      setIsLoadingDetail(true);
+      const fullWork = await getWorkById(work.id);
+      if (fullWork) {
+        workToDownload = fullWork;
+        setSelectedWork(fullWork);
+      }
+      setIsLoadingDetail(false);
+    }
+
+    if (!workToDownload.pdfContent) {
       alert("No PDF file attached to this work.");
       return;
     }
 
     // Increment download count
-    const updatedWorks = await incrementWorkDownload(work.id);
+    const updatedWorks = await incrementWorkDownload(workToDownload.id);
     setWorks(updatedWorks);
 
-    // Update selected work reference to reflect new stats if needed
-    if (selectedWork && selectedWork.id === work.id) {
-       const updated = updatedWorks.find(w => w.id === work.id);
-       if (updated) setSelectedWork(updated);
-    }
-
     const link = document.createElement('a');
-    link.href = work.pdfContent;
-    link.download = `${work.title.replace(/\s+/g, '_')}.pdf`;
+    link.href = workToDownload.pdfContent;
+    link.download = `${workToDownload.title.replace(/\s+/g, '_')}.pdf`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -233,13 +258,19 @@ const App: React.FC = () => {
                 work={work} 
                 canAccess={canAccessWork(work)} 
                 onView={handleViewWork} 
+                isLoading={loadingWorkId === work.id}
               />
             ) : (
               <div 
                 key={work.id}
                 onClick={() => handleViewWork(work)}
-                className="group bg-white border border-gray-100 rounded-lg p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer flex justify-between items-center"
+                className="group bg-white border border-gray-100 rounded-lg p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer flex justify-between items-center relative overflow-hidden"
               >
+                {loadingWorkId === work.id && (
+                  <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                    <i className="fa-solid fa-spinner animate-spin text-accent"></i>
+                  </div>
+                )}
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-1">
                     <span className="text-[10px] uppercase tracking-wider font-bold text-accent">{work.category}</span>
@@ -267,8 +298,17 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-200 py-12">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <p className="font-serif italic text-gray-500 mb-2">"We tell ourselves stories in order to live."</p>
-          <p className="text-xs text-gray-400 uppercase tracking-widest">&copy; {new Date().getFullYear()} Thomas Yazar</p>
+          <p className="font-serif italic text-gray-500 mb-4">"We tell ourselves stories in order to live."</p>
+          
+          <button 
+            onClick={() => setShowContact(true)} 
+            className="inline-flex items-center gap-2 text-sm font-bold text-accent hover:text-ink transition-colors mb-8 group"
+          >
+            <i className="fa-solid fa-envelope group-hover:animate-bounce"></i> 
+            Send me a message
+          </button>
+
+          <p className="text-[10px] text-gray-400 uppercase tracking-widest">&copy; {new Date().getFullYear()} Thomas Yazar</p>
         </div>
       </footer>
 
@@ -299,8 +339,14 @@ const App: React.FC = () => {
                 )}
               </div>
             )}
-            <div className={`${selectedWork.category === Category.THOUGHT ? 'w-full' : 'md:w-3/5'} p-5 sm:p-8 flex flex-col`}>
-              <div className="flex justify-between items-start mb-4">
+              <div className={`${selectedWork.category === Category.THOUGHT ? 'w-full' : 'md:w-3/5'} p-5 sm:p-8 flex flex-col relative`}>
+                {isLoadingDetail && (
+                  <div className="absolute inset-0 bg-white/80 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin mb-2"></div>
+                    <p className="text-xs font-bold text-accent uppercase tracking-widest">Loading content...</p>
+                  </div>
+                )}
+                <div className="flex justify-between items-start mb-4">
                 <div>
                    <span className="text-accent text-[10px] sm:text-xs font-bold uppercase tracking-widest">{selectedWork.category}</span>
                    <h2 className="text-xl sm:text-3xl font-serif font-bold mt-1 mb-1">{selectedWork.title}</h2>
