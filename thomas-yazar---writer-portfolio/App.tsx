@@ -10,6 +10,7 @@ const App: React.FC = () => {
   const [works, setWorks] = useState<Work[]>([]);
   const [user, setUser] = useState<User>(getCurrentUser());
   const [filter, setFilter] = useState<Category | 'All'>('All');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showAdmin, setShowAdmin] = useState(false);
   const [showContact, setShowContact] = useState(false);
   const [selectedWork, setSelectedWork] = useState<Work | null>(null);
@@ -129,7 +130,7 @@ const App: React.FC = () => {
             <span className="hidden sm:inline text-sm text-gray-500 uppercase tracking-widest border-l border-gray-300 pl-3 ml-1">Thomas Yazar</span>
           </div>
 
-          <nav className="flex items-center gap-6">
+          <nav className="flex items-center gap-4 sm:gap-6">
             <div className="hidden md:flex gap-1 text-sm font-medium text-gray-600">
               <button onClick={() => setFilter('All')} className={`px-3 py-1 rounded-full transition-colors ${filter === 'All' ? 'bg-ink text-white' : 'hover:bg-gray-200'}`}>All</button>
               {Object.values(Category).map(c => (
@@ -143,7 +144,24 @@ const App: React.FC = () => {
               ))}
             </div>
 
-            <div className="flex items-center gap-4 border-l border-gray-300 pl-6">
+            <div className="flex items-center gap-2 sm:gap-4 border-l border-gray-300 pl-4 sm:pl-6">
+              <div className="flex bg-gray-100 p-1 rounded-lg">
+                <button 
+                  onClick={() => setViewMode('grid')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'grid' ? 'bg-white shadow-sm text-ink' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="Grid View"
+                >
+                  <i className="fa-solid fa-table-cells-large text-sm"></i>
+                </button>
+                <button 
+                  onClick={() => setViewMode('list')}
+                  className={`p-1.5 rounded-md transition-all ${viewMode === 'list' ? 'bg-white shadow-sm text-ink' : 'text-gray-400 hover:text-gray-600'}`}
+                  title="List View"
+                >
+                  <i className="fa-solid fa-list text-sm"></i>
+                </button>
+              </div>
+
               <button onClick={() => setShowContact(true)} className="text-sm font-medium text-gray-600 hover:text-accent hidden sm:block">
                 Contact
               </button>
@@ -203,15 +221,39 @@ const App: React.FC = () => {
             ))}
         </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {/* Grid/List View */}
+        <div className={viewMode === 'grid' 
+          ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4" 
+          : "flex flex-col gap-3"
+        }>
           {filteredWorks.map(work => (
-            <WorkCard 
-              key={work.id} 
-              work={work} 
-              canAccess={canAccessWork(work)} 
-              onView={handleViewWork} 
-            />
+            viewMode === 'grid' ? (
+              <WorkCard 
+                key={work.id} 
+                work={work} 
+                canAccess={canAccessWork(work)} 
+                onView={handleViewWork} 
+              />
+            ) : (
+              <div 
+                key={work.id}
+                onClick={() => handleViewWork(work)}
+                className="group bg-white border border-gray-100 rounded-lg p-4 sm:p-6 hover:shadow-md transition-all cursor-pointer flex justify-between items-center"
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-accent">{work.category}</span>
+                    <span className="text-[10px] text-gray-400">{new Date(work.dateCreated).toLocaleDateString()}</span>
+                  </div>
+                  <h3 className="text-lg font-serif font-bold text-ink group-hover:text-accent transition-colors">{work.title}</h3>
+                  <p className="text-gray-500 text-xs line-clamp-1 mt-1 max-w-2xl">{work.description}</p>
+                </div>
+                <div className="flex items-center gap-4 text-gray-300 group-hover:text-gray-500 transition-colors ml-4">
+                  {work.isLocked && !canAccessWork(work) && <i className="fa-solid fa-lock text-xs"></i>}
+                  <i className="fa-solid fa-chevron-right text-sm"></i>
+                </div>
+              </div>
+            )
           ))}
           {filteredWorks.length === 0 && (
             <div className="col-span-full py-20 text-center text-gray-400">
@@ -242,40 +284,44 @@ const App: React.FC = () => {
 
       {/* Detail Modal */}
       {selectedWork && (
-        <div className="fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedWork(null)}>
-          <div className="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto flex flex-col md:flex-row overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="md:w-2/5 h-64 md:h-auto bg-gray-100 relative">
-               <img src={selectedWork.coverImage} className="w-full h-full object-cover absolute inset-0" alt={selectedWork.title} referrerPolicy="no-referrer" />
-               {selectedWork.isLocked && !canAccessWork(selectedWork) && (
-                 <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                   <div className="text-center text-white">
-                      <i className="fa-solid fa-lock text-4xl mb-2"></i>
-                      <p className="font-bold">Locked Content</p>
-                   </div>
-                 </div>
-               )}
-            </div>
-            <div className="md:w-3/5 p-8 flex flex-col">
+        <div className="fixed inset-0 bg-ink/70 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedWork(null)}>
+          <div className={`bg-white rounded-lg shadow-2xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto flex flex-col md:flex-row overflow-hidden ${selectedWork.category === Category.THOUGHT ? 'max-w-5xl' : 'max-w-4xl'}`} onClick={e => e.stopPropagation()}>
+            {selectedWork.category !== Category.THOUGHT && (
+              <div className="md:w-2/5 h-48 md:h-auto bg-gray-100 relative">
+                <img src={selectedWork.coverImage} className="w-full h-full object-cover absolute inset-0" alt={selectedWork.title} referrerPolicy="no-referrer" />
+                {selectedWork.isLocked && !canAccessWork(selectedWork) && (
+                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                    <div className="text-center text-white">
+                        <i className="fa-solid fa-lock text-4xl mb-2"></i>
+                        <p className="font-bold">Locked Content</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className={`${selectedWork.category === Category.THOUGHT ? 'w-full' : 'md:w-3/5'} p-5 sm:p-8 flex flex-col`}>
               <div className="flex justify-between items-start mb-4">
                 <div>
-                   <span className="text-accent text-xs font-bold uppercase tracking-widest">{selectedWork.category}</span>
-                   <h2 className="text-3xl font-serif font-bold mt-1 mb-1">{selectedWork.title}</h2>
-                   <div className="flex items-center gap-4 text-gray-400 text-xs">
+                   <span className="text-accent text-[10px] sm:text-xs font-bold uppercase tracking-widest">{selectedWork.category}</span>
+                   <h2 className="text-xl sm:text-3xl font-serif font-bold mt-1 mb-1">{selectedWork.title}</h2>
+                   <div className="flex items-center gap-3 sm:gap-4 text-gray-400 text-[10px] sm:text-xs">
                      <span>Published on {new Date(selectedWork.dateCreated).toLocaleDateString()}</span>
                      <span className="flex items-center gap-1"><i className="fa-solid fa-eye"></i> {selectedWork.views || 0}</span>
-                     <span className="flex items-center gap-1"><i className="fa-solid fa-download"></i> {selectedWork.downloads || 0}</span>
+                     {selectedWork.category !== Category.THOUGHT && (
+                       <span className="flex items-center gap-1"><i className="fa-solid fa-download"></i> {selectedWork.downloads || 0}</span>
+                     )}
                    </div>
                 </div>
-                <button onClick={() => setSelectedWork(null)} className="text-gray-400 hover:text-ink">
+                <button onClick={() => setSelectedWork(null)} className="text-gray-400 hover:text-ink p-1">
                   <i className="fa-solid fa-times text-xl"></i>
                 </button>
               </div>
               
-              <div className="prose prose-sm prose-stone flex-grow mb-8 overflow-y-auto pr-2">
-                <p className="text-gray-700 leading-relaxed text-lg">{selectedWork.description}</p>
+              <div className="prose prose-sm prose-stone flex-grow mb-6 sm:mb-8 overflow-y-auto pr-2">
+                <p className="text-gray-700 leading-relaxed text-sm sm:text-lg">{selectedWork.description}</p>
                 
                 {selectedWork.category === Category.THOUGHT && selectedWork.content && (
-                  <div className="mt-8 p-6 bg-white border-l-4 border-accent shadow-sm italic font-serif text-xl text-ink leading-relaxed">
+                  <div className="mt-6 sm:mt-8 p-4 sm:p-6 bg-white border-l-4 border-accent shadow-sm italic font-serif text-lg sm:text-xl text-ink leading-relaxed">
                     {selectedWork.content.split('\n').map((line, i) => (
                       <p key={i} className={i > 0 ? 'mt-4' : ''}>{line}</p>
                     ))}
@@ -283,8 +329,8 @@ const App: React.FC = () => {
                 )}
 
                 <div className="mt-6 p-4 bg-gray-50 rounded border border-gray-100">
-                  <h4 className="font-bold text-sm mb-2">Author's Note</h4>
-                  <p className="text-xs text-gray-500 italic">
+                  <h4 className="font-bold text-xs sm:text-sm mb-2">Author's Note</h4>
+                  <p className="text-[10px] sm:text-xs text-gray-500 italic">
                     {selectedWork.category === Category.THOUGHT 
                       ? "This is a direct thought, published here for immediate reading."
                       : "This piece is part of the collection. Feel free to download the PDF to read the full manuscript."}
@@ -292,29 +338,29 @@ const App: React.FC = () => {
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-gray-100 flex gap-4">
+              <div className="pt-4 sm:pt-6 border-t border-gray-100 flex gap-4">
                 {canAccessWork(selectedWork) ? (
                   selectedWork.category === Category.THOUGHT ? (
                     <button 
                       onClick={() => setSelectedWork(null)}
-                      className="flex-1 bg-ink text-white py-3 px-6 rounded hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-ink text-white py-2 sm:py-3 px-4 sm:px-6 rounded hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                       Close Reading
                     </button>
                   ) : selectedWork.pdfContent ? (
                     <button 
                       onClick={() => handleDownload(selectedWork)}
-                      className="flex-1 bg-ink text-white py-3 px-6 rounded hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-ink text-white py-2 sm:py-3 px-4 sm:px-6 rounded hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base"
                     >
                       <i className="fa-solid fa-file-pdf"></i> Download PDF
                     </button>
                    ) : (
-                    <button disabled className="flex-1 bg-gray-200 text-gray-400 py-3 px-6 rounded cursor-not-allowed">
+                    <button disabled className="flex-1 bg-gray-200 text-gray-400 py-2 sm:py-3 px-4 sm:px-6 rounded cursor-not-allowed text-sm sm:text-base">
                        PDF Not Available
                     </button>
                    )
                 ) : (
-                  <button onClick={() => { setSelectedWork(null); setShowLogin(true); }} className="flex-1 bg-accent text-white py-3 px-6 rounded hover:bg-orange-600 transition-colors flex items-center justify-center gap-2">
+                  <button onClick={() => { setSelectedWork(null); setShowLogin(true); }} className="flex-1 bg-accent text-white py-2 sm:py-3 px-4 sm:px-6 rounded hover:bg-orange-600 transition-colors flex items-center justify-center gap-2 text-sm sm:text-base">
                     <i className="fa-solid fa-key"></i> Login to Read
                   </button>
                 )}
