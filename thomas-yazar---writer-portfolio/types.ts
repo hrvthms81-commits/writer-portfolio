@@ -13,6 +13,7 @@ export interface Work {
   description: string;
   coverImage?: string; // Data URL
   pdfContent?: string; // Data URL for the PDF
+  content?: string; // Direct text content for Random Thoughts
   dateCreated: number;
   isLocked: boolean; // If true, requires login to download/view full
   views?: number;

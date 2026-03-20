@@ -273,17 +273,35 @@ const App: React.FC = () => {
               
               <div className="prose prose-sm prose-stone flex-grow mb-8 overflow-y-auto pr-2">
                 <p className="text-gray-700 leading-relaxed text-lg">{selectedWork.description}</p>
+                
+                {selectedWork.category === Category.THOUGHT && selectedWork.content && (
+                  <div className="mt-8 p-6 bg-white border-l-4 border-accent shadow-sm italic font-serif text-xl text-ink leading-relaxed">
+                    {selectedWork.content.split('\n').map((line, i) => (
+                      <p key={i} className={i > 0 ? 'mt-4' : ''}>{line}</p>
+                    ))}
+                  </div>
+                )}
+
                 <div className="mt-6 p-4 bg-gray-50 rounded border border-gray-100">
                   <h4 className="font-bold text-sm mb-2">Author's Note</h4>
                   <p className="text-xs text-gray-500 italic">
-                    This piece is part of the collection. Feel free to download the PDF to read the full manuscript.
+                    {selectedWork.category === Category.THOUGHT 
+                      ? "This is a direct thought, published here for immediate reading."
+                      : "This piece is part of the collection. Feel free to download the PDF to read the full manuscript."}
                   </p>
                 </div>
               </div>
 
               <div className="pt-6 border-t border-gray-100 flex gap-4">
                 {canAccessWork(selectedWork) ? (
-                   selectedWork.pdfContent ? (
+                  selectedWork.category === Category.THOUGHT ? (
+                    <button 
+                      onClick={() => setSelectedWork(null)}
+                      className="flex-1 bg-ink text-white py-3 px-6 rounded hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                    >
+                      Close Reading
+                    </button>
+                  ) : selectedWork.pdfContent ? (
                     <button 
                       onClick={() => handleDownload(selectedWork)}
                       className="flex-1 bg-ink text-white py-3 px-6 rounded hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"

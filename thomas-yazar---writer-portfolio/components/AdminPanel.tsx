@@ -13,6 +13,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>(Category.SHORT_STORY);
   const [description, setDescription] = useState('');
+  const [content, setContent] = useState('');
   const [isLocked, setIsLocked] = useState(true);
   const [coverImage, setCoverImage] = useState<string | undefined>(undefined);
   const [pdfContent, setPdfContent] = useState<string | undefined>(undefined);
@@ -64,6 +65,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
     setTitle(work.title);
     setCategory(work.category);
     setDescription(work.description);
+    setContent(work.content || '');
     setIsLocked(work.isLocked);
     setCoverImage(work.coverImage);
     setPdfContent(work.pdfContent);
@@ -105,6 +107,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
       title,
       category,
       description,
+      content,
       isLocked,
       dateCreated: dateCreated,
       coverImage: coverImage || `https://picsum.photos/400/600?random=${Date.now()}`,
@@ -122,6 +125,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
   const resetForm = () => {
     setTitle('');
     setDescription('');
+    setContent('');
     setCoverImage(undefined);
     setPdfContent(undefined);
     setEditingId(null);
@@ -246,30 +250,43 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          {category === Category.THOUGHT ? (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Cover Art</label>
-              <input 
-                ref={fileInputRef}
-                type="file" 
-                accept="image/*"
-                onChange={handleCoverUpload}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-accent hover:file:bg-orange-100"
+              <label className="block text-sm font-medium text-gray-700 mb-1">Thought Content</label>
+              <textarea 
+                value={content} 
+                onChange={e => setContent(e.target.value)}
+                className="w-full border-gray-300 border rounded-md p-2 h-48 font-serif"
+                placeholder="Write your thought directly here..."
               />
-              {editingId && coverImage && <p className="text-xs text-green-600 mt-1">✓ Current image kept</p>}
+              <p className="text-[10px] text-gray-500 mt-1 italic">Note: Random Thoughts are published as direct text and don't require a PDF.</p>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
-              <input 
-                ref={pdfInputRef}
-                type="file" 
-                accept="application/pdf"
-                onChange={handlePdfUpload}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
-              />
-              {editingId && pdfContent && <p className="text-xs text-green-600 mt-1">✓ Current PDF kept</p>}
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cover Art</label>
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  accept="image/*"
+                  onChange={handleCoverUpload}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-accent hover:file:bg-orange-100"
+                />
+                {editingId && coverImage && <p className="text-xs text-green-600 mt-1">✓ Current image kept</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">PDF File</label>
+                <input 
+                  ref={pdfInputRef}
+                  type="file" 
+                  accept="application/pdf"
+                  onChange={handlePdfUpload}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200"
+                />
+                {editingId && pdfContent && <p className="text-xs text-green-600 mt-1">✓ Current PDF kept</p>}
+              </div>
             </div>
-          </div>
+          )}
 
           <button 
             type="submit" 

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Work } from '../types';
+import { Work, Category } from '../types';
 
 interface WorkCardProps {
   work: Work;
@@ -44,7 +44,7 @@ const WorkCard: React.FC<WorkCardProps> = ({ work, canAccess, onView }) => {
             <i className="fa-solid fa-eye"></i>
             {work.views || 0} views
           </span>
-          {work.downloads !== undefined && (
+          {work.downloads !== undefined && work.category !== Category.THOUGHT && (
             <span className="flex items-center gap-1">
               <i className="fa-solid fa-download"></i>
               {work.downloads} downloads

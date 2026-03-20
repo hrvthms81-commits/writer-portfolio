@@ -37,13 +37,21 @@ export const getWorks = async (): Promise<Work[]> => {
 
 export const saveWork = async (work: Work): Promise<void> => {
   try {
-    await fetch('/api/works', {
+    const response = await fetch('/api/works', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(work),
     });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Server error details:', errorData);
+      alert(`Failed to save: ${errorData.message || errorData.error || 'Unknown error'}`);
+      return;
+    }
   } catch (error) {
     console.error('Error saving work:', error);
+    alert('Network error while saving. Check your connection.');
   }
 };
 
