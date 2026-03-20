@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Category, Work } from '../types';
 import { generateWorkSummary } from '../services/geminiService';
-import { saveWork, deleteWork, getAccessCode, setAccessCode, getWorkById } from '../services/storageService';
+import { saveWork, deleteWork, getAccessCode, setAccessCode, getWorkById, getMessages, markMessageAsRead, deleteMessage } from '../services/storageService';
 
 interface AdminPanelProps {
   works: Work[];
@@ -10,6 +10,9 @@ interface AdminPanelProps {
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => {
+  const [activeTab, setActiveTab] = useState<'portfolio' | 'messages'>('portfolio');
+  const [messages, setMessages] = useState<any[]>([]);
+  const [isFetchingMessages, setIsFetchingMessages] = useState(false);
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<Category>(Category.SHORT_STORY);
   const [description, setDescription] = useState('');
@@ -33,6 +36,31 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
     };
     fetchCode();
   }, []);
+
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      fetchMessages();
+    }
+  }, [activeTab]);
+
+  const fetchMessages = async () => {
+    setIsFetchingMessages(true);
+    const msgs = await getMessages();
+    setMessages(msgs);
+    setIsFetchingMessages(false);
+  };
+
+  const handleMarkRead = async (id: string) => {
+    await markMessageAsRead(id);
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, isRead: true } : m));
+  };
+
+  const handleDeleteMessage = async (id: string) => {
+    if (window.confirm('Delete this message?')) {
+      await deleteMessage(id);
+      setMessages(prev => prev.filter(m => m.id !== id));
+    }
+  };
 
   const handleFileRead = (file: File, callback: (result: string) => void) => {
     const reader = new FileReader();
@@ -196,7 +224,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
           </button>
         </div>
 
-        <form id="admin-form" onSubmit={handleSubmit} className="space-y-6 mb-12 border-b border-gray-200 pb-12">
+        <div className="flex border-b border-gray-200 mb-8">
+          <button 
+            onClick={() => setActiveTab('portfolio')}
+            className={`px-6 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 ${activeTab === 'portfolio' ? 'border-accent text-accent' : 'border-transparent text-gray-400 hover:text-ink'}`}
+          >
+            Portfolio
+          </button>
+          <button 
+            onClick={() => setActiveTab('messages')}
+            className={`px-6 py-3 text-sm font-bold uppercase tracking-wider transition-colors border-b-2 flex items-center gap-2 ${activeTab === 'messages' ? 'border-accent text-accent' : 'border-transparent text-gray-400 hover:text-ink'}`}
+          >
+            Messages
+            {messages.some(m => !m.isRead) && (
+              <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+            )}
+          </button>
+        </div>
+
+        {activeTab === 'portfolio' ? (
+          <>
+            <form id="admin-form" onSubmit={handleSubmit} className="space-y-6 mb-12 border-b border-gray-200 pb-12">
           <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg mb-8">
             <label className="block text-sm font-bold text-accent uppercase tracking-wider mb-2">Member Access Code</label>
             <div className="flex gap-2">
@@ -374,6 +422,72 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ works, onUpdate, onClose }) => 
             </div>
           ))}
         </div>
+      </>
+    ) : (
+          <div className="space-y-6">
+            <div className="flex justify-between items-center">
+              <h3 className="text-xl font-bold text-gray-800">Contact Messages</h3>
+              <button 
+                onClick={fetchMessages}
+                className="text-accent hover:text-orange-700 text-sm flex items-center gap-1"
+              >
+                <i className={`fa-solid fa-rotate ${isFetchingMessages ? 'animate-spin' : ''}`}></i>
+                Refresh
+              </button>
+            </div>
+
+            {isFetchingMessages && messages.length === 0 ? (
+              <div className="text-center py-12">
+                <i className="fa-solid fa-spinner fa-spin text-2xl text-gray-300"></i>
+              </div>
+            ) : messages.length === 0 ? (
+              <div className="text-center py-12 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                <p className="text-gray-400 text-sm">No messages yet.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map(msg => (
+                  <div 
+                    key={msg.id} 
+                    className={`p-5 rounded-lg border transition-all ${msg.isRead ? 'bg-white border-gray-100' : 'bg-orange-50/30 border-orange-100 ring-1 ring-orange-100'}`}
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h4 className="font-bold text-ink flex items-center gap-2">
+                          {msg.name}
+                          {!msg.isRead && <span className="text-[10px] bg-accent text-white px-1.5 py-0.5 rounded uppercase">New</span>}
+                        </h4>
+                        <p className="text-xs text-gray-500">{msg.email || 'No email provided'}</p>
+                      </div>
+                      <span className="text-[10px] text-gray-400 uppercase">
+                        {new Date(msg.dateCreated).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-700 bg-white/50 p-3 rounded border border-gray-50 mb-4 whitespace-pre-wrap">
+                      {msg.message}
+                    </p>
+                    <div className="flex justify-end gap-3">
+                      {!msg.isRead && (
+                        <button 
+                          onClick={() => handleMarkRead(msg.id)}
+                          className="text-xs font-bold text-accent hover:underline"
+                        >
+                          Mark as Read
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => handleDeleteMessage(msg.id)}
+                        className="text-xs font-bold text-red-400 hover:text-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

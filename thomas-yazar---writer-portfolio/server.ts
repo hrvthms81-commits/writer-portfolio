@@ -288,6 +288,84 @@ async function startServer() {
     }
   });
 
+  app.get("/api/messages", async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from("messages")
+        .select("*")
+        .order("date_created", { ascending: false });
+      
+      if (error) throw error;
+      
+      const messages = (data || []).map(m => ({
+        id: m.id,
+        name: m.name,
+        email: m.email,
+        message: m.message,
+        dateCreated: m.date_created,
+        isRead: m.is_read
+      }));
+      
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ error: "Failed to fetch messages" });
+    }
+  });
+
+  app.post("/api/messages", async (req, res) => {
+    try {
+      const msg = req.body;
+      const { data, error } = await supabase
+        .from("messages")
+        .insert({
+          name: msg.name,
+          email: msg.email,
+          message: msg.message,
+          date_created: Date.now(),
+          is_read: false
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      res.json(data);
+    } catch (error) {
+      console.error("Error saving message:", error);
+      res.status(500).json({ error: "Failed to save message" });
+    }
+  });
+
+  app.post("/api/messages/:id/read", async (req, res) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .update({ is_read: true })
+        .eq("id", req.params.id);
+      
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error marking message as read:", error);
+      res.status(500).json({ error: "Failed to mark message as read" });
+    }
+  });
+
+  app.delete("/api/messages/:id", async (req, res) => {
+    try {
+      const { error } = await supabase
+        .from("messages")
+        .delete()
+        .eq("id", req.params.id);
+      
+      if (error) throw error;
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting message:", error);
+      res.status(500).json({ error: "Failed to delete message" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");

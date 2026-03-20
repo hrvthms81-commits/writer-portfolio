@@ -137,3 +137,47 @@ export const adminLogin = async (username: string, password: string): Promise<Us
 export const logoutUser = (): void => {
   localStorage.removeItem(USER_KEY);
 };
+
+export const getMessages = async (): Promise<any[]> => {
+  try {
+    const response = await fetch('/api/messages');
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching messages:', error);
+    return [];
+  }
+};
+
+export const saveMessage = async (message: { name: string; email?: string; message: string }): Promise<void> => {
+  try {
+    const response = await fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(message),
+    });
+    if (!response.ok) throw new Error('Failed to save message');
+  } catch (error) {
+    console.error('Error saving message:', error);
+    throw error;
+  }
+};
+
+export const markMessageAsRead = async (id: string): Promise<void> => {
+  try {
+    await fetch(`/api/messages/${id}/read`, {
+      method: 'POST',
+    });
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+  }
+};
+
+export const deleteMessage = async (id: string): Promise<void> => {
+  try {
+    await fetch(`/api/messages/${id}`, {
+      method: 'DELETE',
+    });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+  }
+};

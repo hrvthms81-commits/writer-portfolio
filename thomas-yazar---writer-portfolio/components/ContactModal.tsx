@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { saveMessage } from '../services/storageService';
 
 interface ContactModalProps {
   onClose: () => void;
@@ -8,6 +9,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Antispam State
   const [num1, setNum1] = useState(0);
@@ -22,7 +24,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
     setNum2(Math.floor(Math.random() * 10) + 1);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -32,12 +34,18 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
       return;
     }
 
-    // Simulate sending
-    console.log(`Message from ${name} (${email}) to hervethomas81@gmail.com: ${message}`);
-    setSuccess(true);
-    setTimeout(() => {
-      onClose();
-    }, 3000);
+    setIsSubmitting(true);
+    try {
+      await saveMessage({ name, email, message });
+      setSuccess(true);
+      setTimeout(() => {
+        onClose();
+      }, 3000);
+    } catch (err) {
+      setError('Failed to send message. Please try again later.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -58,7 +66,7 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
             <div className="text-center py-12">
               <i className="fa-solid fa-paper-plane text-4xl text-green-500 mb-4 animate-bounce"></i>
               <h3 className="text-xl font-bold text-gray-800">Message Sent!</h3>
-              <p className="text-gray-500 text-sm mt-2">Thank you for writing. Your message has been sent to <span className="font-bold text-ink">hervethomas81@gmail.com</span>.</p>
+              <p className="text-gray-500 text-sm mt-2">Thank you for writing. Your message has been saved to the <span className="font-bold text-ink">Admin Panel</span>.</p>
               <p className="text-xs text-gray-400 mt-4 italic">Closing window...</p>
             </div>
           ) : (
@@ -76,10 +84,9 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Email Address</label>
+                <label className="block text-xs font-bold uppercase text-gray-500 mb-1">Email Address (Optional)</label>
                 <input 
                   type="email" 
-                  required
                   value={email}
                   onChange={e => setEmail(e.target.value)}
                   className="w-full border border-gray-300 rounded p-2 focus:border-accent focus:ring-1 focus:ring-accent outline-none"
@@ -122,20 +129,15 @@ const ContactModal: React.FC<ContactModalProps> = ({ onClose }) => {
 
               <button 
                 type="submit" 
-                className="w-full bg-ink text-white py-3 rounded font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="w-full bg-ink text-white py-3 rounded font-semibold hover:bg-gray-800 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Send Message
+                {isSubmitting ? (
+                  <i className="fa-solid fa-spinner fa-spin"></i>
+                ) : (
+                  'Send Message'
+                )}
               </button>
-
-              <div className="text-center pt-4">
-                <p className="text-[10px] text-gray-400 uppercase tracking-widest mb-2">Or email directly</p>
-                <a 
-                  href="mailto:hervethomas81@gmail.com" 
-                  className="text-xs text-accent hover:underline font-bold"
-                >
-                  hervethomas81@gmail.com
-                </a>
-              </div>
             </form>
           )}
         </div>

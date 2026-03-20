@@ -277,7 +277,21 @@ const App: React.FC = () => {
                     <span className="text-[10px] text-gray-400">{new Date(work.dateCreated).toLocaleDateString()}</span>
                   </div>
                   <h3 className="text-lg font-serif font-bold text-ink group-hover:text-accent transition-colors">{work.title}</h3>
-                  <p className="text-gray-500 text-xs line-clamp-1 mt-1 max-w-2xl">{work.description}</p>
+                  <div className="flex items-center gap-4 mt-1">
+                    <p className="text-gray-500 text-xs line-clamp-1 max-w-2xl">{work.description}</p>
+                    <div className="flex items-center gap-3 text-[10px] text-gray-400 font-medium uppercase tracking-wider ml-auto">
+                      <span className="flex items-center gap-1">
+                        <i className="fa-solid fa-eye"></i>
+                        {work.views || 0}
+                      </span>
+                      {work.category !== Category.THOUGHT && (
+                        <span className="flex items-center gap-1">
+                          <i className="fa-solid fa-download"></i>
+                          {work.downloads || 0}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-center gap-4 text-gray-300 group-hover:text-gray-500 transition-colors ml-4">
                   {work.isLocked && !canAccessWork(work) && <i className="fa-solid fa-lock text-xs"></i>}

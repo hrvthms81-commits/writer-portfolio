@@ -31,3 +31,12 @@ export interface ChatMessage {
   text: string;
   timestamp: number;
 }
+
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email?: string;
+  message: string;
+  dateCreated: number;
+  isRead: boolean;
+}
